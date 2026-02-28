@@ -24,7 +24,7 @@
 
 ## What You Can Build
 
-🤖 **AI Agent Tools** - Integrate NotebookLM into Claude Code or other LLM agents. Ships with [Claude Code skills](#agent-skills-claude-code) for natural language automation (`notebooklm skill install`), or build your own integrations with the async Python API.
+🤖 **AI Agent Tools** - Integrate NotebookLM into Codex, Claude Code, or other LLM agents. Ships with [agent skills](#agent-skills-codex-and-claude-code) for natural language automation (`notebooklm skill install`), or build your own integrations with the async Python API.
 
 📚 **Research Automation** - Bulk-import sources (URLs, PDFs, YouTube, Google Drive), run web/Drive research queries with auto-import, and extract insights programmatically. Build repeatable research pipelines.
 
@@ -38,7 +38,7 @@
 |--------|----------|
 | **Python API** | Application integration, async workflows, custom pipelines |
 | **CLI** | Shell scripts, quick tasks, CI/CD automation |
-| **Agent Skills** | Claude Code, LLM agents, natural language automation |
+| **Agent Skills** | Codex, Claude Code, LLM agents, natural language automation |
 
 ## Features
 
@@ -174,11 +174,22 @@ async def main():
 asyncio.run(main())
 ```
 
-### Agent Skills (Claude Code)
+### Agent Skills (Codex and Claude Code)
 
 ```bash
-# Install via CLI or ask Claude Code to do it
+# Install via CLI (default target is Codex)
 notebooklm skill install
+
+# Optional explicit targets
+notebooklm skill install --target codex
+notebooklm skill install --target claude
+
+# Install directly with Codex skill-installer from this repository
+# (uses the skill source at src/notebooklm/data)
+python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
+  --repo teng-lin/notebooklm-py \
+  --path src/notebooklm/data \
+  --name notebooklm
 
 # Then use natural language:
 # "Create a podcast about quantum computing"

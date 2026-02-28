@@ -23,9 +23,10 @@ pip install "git+https://github.com/teng-lin/notebooklm-py@${LATEST_TAG}"
 
 ⚠️ **DO NOT install from main branch** (`pip install git+https://github.com/teng-lin/notebooklm-py`). The main branch may contain unreleased/unstable changes. Always use PyPI or a specific release tag, unless you are testing unreleased features.
 
-After installation, install the Claude Code skill:
+After installation, install the Codex/Claude skill (default target is Codex):
 ```bash
-notebooklm skill install
+notebooklm skill install --target codex
+notebooklm skill install --target claude  # Optional Claude compatibility
 ```
 
 ## Prerequisites
@@ -540,4 +541,4 @@ notebooklm language --help     # Language settings
 **Diagnose auth:** `notebooklm auth check` - shows cookie domains, storage path, validation status
 **Re-authenticate:** `notebooklm login`
 **Check version:** `notebooklm --version`
-**Update skill:** `notebooklm skill install`
+**Update skill:** `notebooklm skill install --target codex` (or `--target claude`)

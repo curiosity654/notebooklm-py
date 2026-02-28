@@ -165,16 +165,25 @@ All generate commands support:
 
 ### Skill Commands (`notebooklm skill <cmd>`)
 
-Manage Claude Code skill integration.
+Manage Codex/Claude skill integration.
 
 | Command | Description | Example |
 |---------|-------------|---------|
-| `install` | Install/update skill to ~/.claude/skills/ | `skill install` |
-| `status` | Check installation and version | `skill status` |
-| `uninstall` | Remove skill | `skill uninstall` |
-| `show` | Display skill content | `skill show` |
+| `install` | Install/update skill for target (`--target codex|claude`, default: codex). Codex path: `$CODEX_HOME/skills/notebooklm/` (fallback `~/.codex/skills/notebooklm/`), Claude path: `~/.claude/skills/notebooklm/` | `skill install --target codex` |
+| `status` | Check installation and version for target | `skill status --target claude` |
+| `uninstall` | Remove skill for target | `skill uninstall --target codex` |
+| `show` | Display skill content for target | `skill show --target codex` |
 
-After installation, Claude Code recognizes NotebookLM commands via `/notebooklm` or natural language like "create a podcast about X".
+After installation, Codex or Claude Code recognizes NotebookLM commands via `/notebooklm` or natural language like "create a podcast about X".
+
+Codex `skill-installer` can install this repository directly from `src/notebooklm/data`:
+
+```bash
+python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
+  --repo teng-lin/notebooklm-py \
+  --path src/notebooklm/data \
+  --name notebooklm
+```
 
 ### Features Beyond the Web UI
 

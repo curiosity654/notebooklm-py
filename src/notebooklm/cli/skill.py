@@ -1,9 +1,10 @@
 """Skill management commands.
 
-Commands for managing the Claude Code skill integration.
+Commands for managing Codex/Claude skill integration.
 """
 
 import contextlib
+import os
 import re
 from importlib import resources
 from pathlib import Path
@@ -12,9 +13,9 @@ import click
 
 from .helpers import console
 
-# Skill paths
-SKILL_DEST_DIR = Path.home() / ".claude" / "skills" / "notebooklm"
-SKILL_DEST = SKILL_DEST_DIR / "SKILL.md"
+SKILL_NAME = "notebooklm"
+TARGET_CHOICES = click.Choice(["codex", "claude"], case_sensitive=False)
+TARGET_HELP = "Skill target platform."
 
 
 def get_skill_source_content() -> str | None:
@@ -48,19 +49,43 @@ def get_skill_version(skill_path: Path) -> str | None:
     return match.group(1) if match else None
 
 
+def resolve_skill_destination(target: str) -> tuple[Path, Path]:
+    """Resolve destination directory and file for a target platform."""
+    target = target.lower()
+    if target == "codex":
+        codex_home = Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex"))).expanduser()
+        skill_dir = codex_home / "skills" / SKILL_NAME
+    elif target == "claude":
+        skill_dir = Path.home() / ".claude" / "skills" / SKILL_NAME
+    else:
+        raise ValueError(f"Unknown target: {target}")
+
+    return skill_dir, skill_dir / "SKILL.md"
+
+
 @click.group()
 def skill():
-    """Manage Claude Code skill integration."""
+    """Manage Codex/Claude skill integration."""
     pass
 
 
 @skill.command()
-def install():
-    """Install or update the NotebookLM skill for Claude Code.
+@click.option(
+    "--target",
+    type=TARGET_CHOICES,
+    default="codex",
+    show_default=True,
+    help=TARGET_HELP,
+)
+def install(target: str):
+    """Install or update the NotebookLM skill for Codex or Claude Code.
 
-    Copies the skill file to ~/.claude/skills/notebooklm/SKILL.md
+    Copies the skill file to the selected target skill directory
     and embeds the current package version for tracking.
     """
+    target = target.lower()
+    skill_dest_dir, skill_dest = resolve_skill_destination(target)
+
     # Read skill content from package data
     content = get_skill_source_content()
     if content is None:
@@ -70,7 +95,7 @@ def install():
         raise SystemExit(1)
 
     # Create destination directory
-    SKILL_DEST_DIR.mkdir(parents=True, exist_ok=True)
+    skill_dest_dir.mkdir(parents=True, exist_ok=True)
 
     # Embed version in skill file (after frontmatter)
     version = get_package_version()
@@ -87,67 +112,109 @@ def install():
         content = version_comment + content
 
     # Write to destination
-    with open(SKILL_DEST, "w", encoding="utf-8") as f:
+    with open(skill_dest, "w", encoding="utf-8") as f:
         f.write(content)
 
-    console.print(f"[green]Installed[/green] NotebookLM skill to {SKILL_DEST}")
+    console.print(f"[green]Installed[/green] NotebookLM skill to {skill_dest}")
+    console.print(f"  Target: {target}")
     console.print(f"  Version: {version}")
     console.print("")
-    console.print("Claude Code will now recognize NotebookLM commands.")
-    console.print("Try: [cyan]/notebooklm[/cyan] or ask Claude to 'create a podcast about X'")
+    if target == "codex":
+        console.print("Codex will now recognize NotebookLM commands.")
+        console.print("Try: [cyan]/notebooklm[/cyan] or ask Codex to 'create a podcast about X'")
+    else:
+        console.print("Claude Code will now recognize NotebookLM commands.")
+        console.print("Try: [cyan]/notebooklm[/cyan] or ask Claude to 'create a podcast about X'")
 
 
 @skill.command()
-def status():
+@click.option(
+    "--target",
+    type=TARGET_CHOICES,
+    default="codex",
+    show_default=True,
+    help=TARGET_HELP,
+)
+def status(target: str):
     """Check if the skill is installed and show version info."""
-    cli_version = get_package_version()
-    skill_version = get_skill_version(SKILL_DEST)
+    target = target.lower()
+    _, skill_dest = resolve_skill_destination(target)
 
-    if not SKILL_DEST.exists():
+    cli_version = get_package_version()
+    skill_version = get_skill_version(skill_dest)
+
+    if not skill_dest.exists():
         console.print("[yellow]Not installed[/yellow]")
+        console.print(f"  Target: {target}")
+        console.print(f"  Path: {skill_dest}")
         console.print(f"  CLI version: {cli_version}")
         console.print("")
-        console.print("Run [cyan]notebooklm skill install[/cyan] to install the skill.")
+        console.print(f"Run [cyan]notebooklm skill install --target {target}[/cyan] to install.")
         return
 
-    console.print(f"[green]Installed[/green] at {SKILL_DEST}")
+    console.print(f"[green]Installed[/green] at {skill_dest}")
+    console.print(f"  Target: {target}")
     console.print(f"  Skill version: {skill_version or 'unknown'}")
     console.print(f"  CLI version:   {cli_version}")
 
     if skill_version and skill_version != cli_version:
         console.print("")
         console.print(
-            "[yellow]Version mismatch![/yellow] Run [cyan]notebooklm skill install[/cyan] to update."
+            f"[yellow]Version mismatch![/yellow] Run "
+            f"[cyan]notebooklm skill install --target {target}[/cyan] to update."
         )
 
 
 @skill.command()
-def uninstall():
-    """Remove the NotebookLM skill from Claude Code."""
-    if not SKILL_DEST.exists():
+@click.option(
+    "--target",
+    type=TARGET_CHOICES,
+    default="codex",
+    show_default=True,
+    help=TARGET_HELP,
+)
+def uninstall(target: str):
+    """Remove the NotebookLM skill from Codex or Claude Code."""
+    target = target.lower()
+    skill_dest_dir, skill_dest = resolve_skill_destination(target)
+
+    if not skill_dest.exists():
         console.print("[yellow]Skill not installed[/yellow]")
         return
 
     # Remove the skill file
-    SKILL_DEST.unlink()
+    skill_dest.unlink()
 
     # Remove the directory if empty
     with contextlib.suppress(OSError):
-        SKILL_DEST_DIR.rmdir()
+        skill_dest_dir.rmdir()
 
-    console.print("[green]Uninstalled[/green] NotebookLM skill")
-    console.print("Claude Code will no longer recognize NotebookLM commands.")
+    console.print(f"[green]Uninstalled[/green] NotebookLM skill (target: {target})")
+    if target == "codex":
+        console.print("Codex will no longer recognize NotebookLM commands.")
+    else:
+        console.print("Claude Code will no longer recognize NotebookLM commands.")
 
 
 @skill.command()
-def show():
+@click.option(
+    "--target",
+    type=TARGET_CHOICES,
+    default="codex",
+    show_default=True,
+    help=TARGET_HELP,
+)
+def show(target: str):
     """Display the skill file content."""
-    if not SKILL_DEST.exists():
+    target = target.lower()
+    _, skill_dest = resolve_skill_destination(target)
+
+    if not skill_dest.exists():
         console.print("[yellow]Skill not installed[/yellow]")
-        console.print("Run [cyan]notebooklm skill install[/cyan] first.")
+        console.print(f"Run [cyan]notebooklm skill install --target {target}[/cyan] first.")
         return
 
-    with open(SKILL_DEST, encoding="utf-8") as f:
+    with open(skill_dest, encoding="utf-8") as f:
         content = f.read()
 
     console.print(content)
